@@ -13,7 +13,7 @@ class plot_algotrading:
         self.path = r'pycon-tatasteel-data.csv'
         self.collect_data()
         self.plot_initialize()
-        self.animate()
+#        self.animate()
 
     def collect_data(self): 
         self.csv = pandas.read_csv(self.path)
@@ -37,11 +37,16 @@ class plot_algotrading:
         plt.plot(dates_for_plotting, values, color='b')
 
     def animate(self):
-        for i in xrange(1,13):
-            j = i*1000
+        for i in xrange(1,130):
+            j = i*100
             self.plot(j)
             plt.pause(0.05)
 
+    def check_buy(self):
+        pass
+
+    def check_sell(self):
+        pass
 
 class Indicators:
     def sma(self, data, window):
@@ -63,10 +68,22 @@ class Indicators:
         return current_ema
 
 
-
-
 if __name__ == "__main__":
-    plot_algotrading()
+    p = plot_algotrading()
+    ind = Indicators()
+
+    for i,data in enumerate(p.closing_values_tatasteel):
+        if i >=14:
+            # check buy
+            if ind.ema(p.closing_values_tatasteel[:i+1], 3) > ind.ema(p.closing_values_tatasteel[:i+1], 15):
+                print "Buy (Value: %d)" % data
+
+            # check sell
+            if ind.ema(p.closing_values_tatasteel[:i+1], 15) > ind.ema(p.closing_values_tatasteel[:i+1], 3):
+                print "Sell (Value: %d)" % data
+
+        print i
+
     while True:
-        1 ==1 
+        time.sleep(100)
 
