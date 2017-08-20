@@ -7,18 +7,20 @@ from IPython.display import HTML
 import time
 
 
+PATH_DATA_POINTS = r'pycon-tatasteel-data.csv'
+
 class plot_algotrading:
     
-    def __init__(self):
-        self.path = r'pycon-tatasteel-data.csv'
+    def __init__(self, sampling_points = -1):
+        self.sampling_points = sampling_points
         self.collect_data()
         self.plot_initialize()
 #        self.animate()
 
     def collect_data(self): 
-        self.csv = pandas.read_csv(self.path)
-        self.dates = [dt.datetime.strptime(date,'%d/%m/%y %H:%M') for date in self.csv['Date']][::-1]
-        self.closing_values_tatasteel = self.csv['TATASTEEL-EQ C'].tolist()[::-1]
+        self.csv = pandas.read_csv(PATH_DATA_POINTS)
+        self.dates = [dt.datetime.strptime(date,'%d/%m/%y %H:%M') for date in self.csv['Date']][::-1][:self.sampling_points]
+        self.closing_values_tatasteel = self.csv['TATASTEEL-EQ C'].tolist()[::-1][:self.sampling_points]
 
     def plot_initialize(self):
         plt.xlim([self.dates[0], self.dates[-1]])
@@ -48,7 +50,18 @@ class plot_algotrading:
     def check_sell(self):
         pass
 
-class Indicators:
+
+class AlgoTrading:
+    def __init__(self, sampling_points=-1):
+        self.sampling_points = sampling_points
+        self.buy_trades = []
+        self.sell_trades = []
+        self.collect_data()
+
+    def collect_data(self):
+        self.csv = pandas.read_csv(PATH_DATA_POINTS)
+        self.data_points = self.csv['TATASTEEL-EQ C'].tolist()[::-1][:self.sampling_points]
+
     def sma(self, data, window):
         """
         Calculates Simple Moving Average
@@ -67,23 +80,52 @@ class Indicators:
             current_ema = (c * value) + ((1 - c) * current_ema)
         return current_ema
 
+    def trade(self):
+        for i,data in enumerate(self.data_points):
+            if i >=29:      # ema(15) needs atleast 30 points
+                # Buy crossover
+                if self.ema(self.data_points[:i+1], 3) > self.ema(self.data_points[:i+1], 15):
+#                    print "Buy (Value: %f)" % data
+                    self.buy_trades.append(data)
+
+                # Sell crossover
+                if self.ema(self.data_points[:i+1], 15) > self.ema(self.data_points[:i+1], 3):
+#                    print "Sell (Value: %f)" % data
+                    self.sell_trades.append(data)
+
+#        print 'Final numbers:'
+        buy_qty = len(self.buy_trades)
+        sell_qty = len(self.sell_trades)
+        qty = min(buy_qty, sell_qty)
+        sell = sum(self.sell_trades[:qty])
+        buy = sum(self.buy_trades[:qty])
+        profit = sell - buy
+        profit_percent = profit*100.0/(buy/len(self.buy_trades))
+#        print 'Buy_qty:%s, Sell qty:%s, Min qty:%s' %(buy_qty, sell_qty, qty)
+#        print 'Buy trades:', [("%.1f" % trade) for trade in self.buy_trades[:qty]]
+#        print 'Sell trades:', [("%.1f" % trade) for trade in self.sell_trades[:qty]]
+#        print 'Total buy: %s' % buy
+#        print 'Total sell: %s' % sell
+#        print 'Total profit: %s' % profit
+#        print 'Total profit_percent: %s' % profit_percent
+
+        return profit_percent
+
 
 if __name__ == "__main__":
-    p = plot_algotrading()
-    ind = Indicators()
+    #    import sys
+    #no = int(sys.argv[1])
+    #    p = plot_algotrading(1125)
 
-    for i,data in enumerate(p.closing_values_tatasteel):
-        if i >=14:
-            # check buy
-            if ind.ema(p.closing_values_tatasteel[:i+1], 3) > ind.ema(p.closing_values_tatasteel[:i+1], 15):
-                print "Buy (Value: %d)" % data
 
-            # check sell
-            if ind.ema(p.closing_values_tatasteel[:i+1], 15) > ind.ema(p.closing_values_tatasteel[:i+1], 3):
-                print "Sell (Value: %d)" % data
+    y = []
+    for x in xrange(100,15001):
+        algotrading = AlgoTrading(x)
+        y.append(algotrading.trade())
+    
+    plt.plot(x,y)
 
-        print i
 
-    while True:
-        time.sleep(100)
+#    while True:
+#        time.sleep(100)
 
