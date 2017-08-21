@@ -9,48 +9,6 @@ import time
 
 PATH_DATA_POINTS = r'pycon-tatasteel-data.csv'
 
-class plot_algotrading:
-    
-    def __init__(self, sampling_points = -1):
-        self.sampling_points = sampling_points
-        self.collect_data()
-        self.plot_initialize()
-#        self.animate()
-
-    def collect_data(self): 
-        self.csv = pandas.read_csv(PATH_DATA_POINTS)
-        self.dates = [dt.datetime.strptime(date,'%d/%m/%y %H:%M') for date in self.csv['Date']][::-1][:self.sampling_points]
-        self.closing_values_tatasteel = self.csv['TATASTEEL-EQ C'].tolist()[::-1][:self.sampling_points]
-
-    def plot_initialize(self):
-        plt.xlim([self.dates[0], self.dates[-1]])
-        plt.ylim([min(self.closing_values_tatasteel), max(self.closing_values_tatasteel)])
-        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%y'))  # will show date in this format
-        plt.gca().xaxis.set_major_locator(mdates.MonthLocator())   # Will only show months
-        plt.gca().grid()
-        #plt.gca().set_xticks(xrange(0,len(dates), 5)) 
-        #plt.gca().set_xticklabels(dates)     # set the ticklabels to the list of datetimes
-        plt.xticks(rotation=30)       # rotate the xticklabels by 30 deg
-        plt.ion()
-
-    def plot(self, len_data):
-        dates_for_plotting = self.dates[:len_data]
-        values = self.closing_values_tatasteel[:len_data]
-        plt.plot(dates_for_plotting, values, color='b')
-
-    def animate(self):
-        for i in xrange(1,130):
-            j = i*100
-            self.plot(j)
-            plt.pause(0.05)
-
-    def check_buy(self):
-        pass
-
-    def check_sell(self):
-        pass
-
-
 class AlgoTrading:
     def __init__(self, sampling_points=-1):
         self.sampling_points = sampling_points
@@ -162,30 +120,82 @@ class AlgoTrading:
         for profit_percent in self.strategy1():
             print profit_percent
 
-    def plot(self):
+    def animate(self):
+        """
+        Animates 2 plots -
+        1. Stock Price vs Date
+        2. Profit percentage vs Date
+
+        Speed of animation can be controlle by playing with 3rd argument of xrange
+        """
         df = pandas.DataFrame(self.trade_history)
 
         plt.ion()
         plt.figure(1)
         plt.hold(True)
+        ylim1_min = min(df['stock_price'])
+        ylim1_max = max(df['stock_price'])
+        ylim2_min = min(df['profit_percent'])
+        ylim2_max = max(df['profit_percent'])
 
-        for i, row in df.iterrows():
-            #            plt.subplot(211)
-            #            plt.plot(self.dates, df['stock_price'])
-            #            plt.subplot(212)
-            #            plt.plot(self.dates, df['profit_percent'])
+        for i in xrange(0, df.shape[0], df.shape[0]/100):
+            # Stock price
+            plt.subplot(211).cla()
+            plt.ylabel('Stock price')
+            plt.xlim([self.dates[0], self.dates[-1]])
+            plt.ylim([ylim1_min, ylim1_max])
+            plt.plot(self.dates[:i], df['stock_price'][:i], color='b')
 
-            print row
-            plt.subplot(211)
-            plt.plot(self.dates[i], row['stock_price'], color='b', marker='_')
-            plt.subplot(212)
-            plt.plot(self.dates[i], row['profit_percent'], color='b', marker='_')
+            # Percentage profit
+            plt.subplot(212).cla()
+            plt.xlim([self.dates[0], self.dates[-1]])
+            plt.ylim([ylim2_min, ylim2_max])
+            plt.ylabel('Percentage profit')
+            plt.xlabel('Date')
+            plt.plot(self.dates[:i], df['profit_percent'][:i], color='b')
+
             plt.pause(0.01)
 
+            if i == 0:
+                time.sleep(5)
 
+        while True:
+            time.sleep(1)
+
+    def plot(self):
+        """
+        Creates 2 plots -
+        1. Stock Price vs Date
+        2. Profit percentage vs Date
+        """
+
+        df = pandas.DataFrame(self.trade_history)
+
+        ylim1_min = min(df['stock_price'])
+        ylim1_max = max(df['stock_price'])
+        ylim2_min = min(df['profit_percent'])
+        ylim2_max = max(df['profit_percent'])
+
+        # Stock price
+        plt.subplot(211)
+        plt.ylabel('Stock price')
+        plt.xlim([self.dates[0], self.dates[-1]])
+        plt.ylim([ylim1_min, ylim1_max])
+        plt.plot(self.dates, df['stock_price'], color='b')
+
+        # Percentage profit
+        plt.subplot(212).cla()
+        plt.xlim([self.dates[0], self.dates[-1]])
+        plt.ylim([ylim2_min, ylim2_max])
+        plt.ylabel('Percentage profit')
+        plt.xlabel('Date')
+        plt.plot(self.dates, df['profit_percent'], color='b')
+
+        plt.show()
 
 
 if __name__ == "__main__":
     algotrading = AlgoTrading()
     algotrading.trade()
     algotrading.plot()
+#    algotrading.animate()
