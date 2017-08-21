@@ -57,6 +57,8 @@ class AlgoTrading:
         self.buy_trades = []
         self.sell_trades = []
         self.collect_data()
+        self.initialize_crossover1()
+        self.initialize_crossover2()
 
     def collect_data(self):
         self.csv = pandas.read_csv(PATH_DATA_POINTS)
@@ -80,17 +82,51 @@ class AlgoTrading:
             current_ema = (c * value) + ((1 - c) * current_ema)
         return current_ema
 
+    def initialize_crossover1(self):
+        self.prev_val1 = 0
+        self.prev_val2 = 0
+
+    def crossover1(self, val1, val2):
+        cmp1 = cmp(val1, val2)
+        cmp2 = cmp(self.prev_val1, self.prev_val2)
+        if (not (self.prev_val1 == 0 and self.prev_val2 == 0)):         # don't trigger crossover when called first time
+            self.prev_val1, self.prev_val2 = val1, val2
+            if cmp1 > cmp2:
+                return True
+            else:
+                return False
+        else:
+            self.prev_val1, self.prev_val2 = val1, val2
+            return False
+
+    def initialize_crossover2(self):
+        self.prev_val3 = 0
+        self.prev_val4 = 0
+
+    def crossover2(self, val3, val4):
+        cmp1 = cmp(val3, val4)
+        cmp2 = cmp(self.prev_val3, self.prev_val4)
+        if (not (self.prev_val3 == 0 and self.prev_val4 == 0)):         # don't trigger crossover when called first time
+            self.prev_val3, self.prev_val4 = val3, val4
+            if cmp1 > cmp2:
+                return True
+            else:
+                return False
+        else:
+            self.prev_val3, self.prev_val4 = val3, val4
+            return False
+
     def trade(self):
         for i,data in enumerate(self.data_points):
             if i >=29:      # ema(15) needs atleast 30 points
                 # Buy crossover
-                if self.ema(self.data_points[:i+1], 3) > self.ema(self.data_points[:i+1], 15):
-#                    print "Buy (Value: %f)" % data
+                if self.crossover1(self.ema(self.data_points[:i+1], 3), self.ema(self.data_points[:i+1], 15)):
+                    print "Buy (Value: %.2f)" % data
                     self.buy_trades.append(data)
 
                 # Sell crossover
-                if self.ema(self.data_points[:i+1], 15) > self.ema(self.data_points[:i+1], 3):
-#                    print "Sell (Value: %f)" % data
+                if self.crossover2(self.ema(self.data_points[:i+1], 15), self.ema(self.data_points[:i+1], 3)):
+                    print "Sell (Value: %.2f)" % data
                     self.sell_trades.append(data)
 
 #        print 'Final numbers:'
@@ -101,13 +137,13 @@ class AlgoTrading:
         buy = sum(self.buy_trades[:qty])
         profit = sell - buy
         profit_percent = profit*100.0/(buy/len(self.buy_trades))
-#        print 'Buy_qty:%s, Sell qty:%s, Min qty:%s' %(buy_qty, sell_qty, qty)
-#        print 'Buy trades:', [("%.1f" % trade) for trade in self.buy_trades[:qty]]
-#        print 'Sell trades:', [("%.1f" % trade) for trade in self.sell_trades[:qty]]
-#        print 'Total buy: %s' % buy
-#        print 'Total sell: %s' % sell
-#        print 'Total profit: %s' % profit
-#        print 'Total profit_percent: %s' % profit_percent
+        print 'Buy_qty:%s, Sell qty:%s, Min qty:%s' %(buy_qty, sell_qty, qty)
+        print 'Buy trades:', [("%.2f" % trade) for trade in self.buy_trades[:qty]]
+        print 'Sell trades:', [("%.2f" % trade) for trade in self.sell_trades[:qty]]
+        print 'Total buy: %s' % buy
+        print 'Total sell: %s' % sell
+        print 'Total profit: %s' % profit
+        print 'Total profit_percent: %s' % profit_percent
 
         return profit_percent
 
@@ -117,13 +153,20 @@ if __name__ == "__main__":
     #no = int(sys.argv[1])
     #    p = plot_algotrading(1125)
 
-
+    
+    algotrading = AlgoTrading()
+    print algotrading.trade()
+    raise SystemExit
     y = []
-    for x in xrange(100,15001):
-        algotrading = AlgoTrading(x)
-        y.append(algotrading.trade())
+    x = xrange(101,15001, 100)
+    for x_ in x:
+        algotrading = AlgoTrading(x_)
+        profit = algotrading.trade()
+        y.append(profit)
+        print profit
     
     plt.plot(x,y)
+    plt.show()
 
 
 #    while True:
